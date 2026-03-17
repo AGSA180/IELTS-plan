@@ -1,0 +1,90 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores user profile information, including their target band score and test date.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The user's unique identifier from Firebase Auth."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "targetBand": {
+          "type": "number",
+          "description": "The user's target IELTS band score (e.g., 7.0, 7.5)."
+        },
+        "testDate": {
+          "type": "string",
+          "description": "The user's upcoming IELTS test date (ISO string format)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the user profile was created."
+        }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "Report": {
+      "title": "Practice Report",
+      "description": "Stores the user's practice session results, including their input and AI feedback.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The user's unique identifier from Firebase Auth."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["writing1", "writing2", "speaking", "reading", "listening"],
+          "description": "The type of practice task."
+        },
+        "score": {
+          "type": "number",
+          "description": "The overall band score achieved in this practice."
+        },
+        "feedback": {
+          "type": "object",
+          "description": "The detailed feedback object returned by the AI."
+        },
+        "userText": {
+          "type": "string",
+          "description": "The text or response provided by the user."
+        },
+        "prompt": {
+          "type": "string",
+          "description": "The question or prompt the user was responding to."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the report was generated."
+        }
+      },
+      "required": ["uid", "type", "score", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "Collection of user profiles."
+    },
+    "reports/{reportId}": {
+      "schema": {
+        "$ref": "#/entities/Report"
+      },
+      "description": "Collection of practice reports for all users."
+    }
+  }
+}
