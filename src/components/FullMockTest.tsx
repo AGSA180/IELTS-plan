@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { T, btn, card } from "../theme";
 import { SectionLabel } from "./Shared";
 import { ListeningSection, ReadingSection } from "./ListeningReading";
@@ -23,34 +23,42 @@ export function FullMockTest({ logEntry }: { logEntry: any }) {
 
   const currentStage = TEST_STAGES[stageIdx];
 
+  const handleNextStage = useCallback(() => {
+    setStageIdx(prevIdx => {
+      if (prevIdx < TEST_STAGES.length - 1) {
+        const nextIdx = prevIdx + 1;
+        setTimeLeft(TEST_STAGES[nextIdx].duration);
+        if (TEST_STAGES[nextIdx].id === "complete") {
+          setIsActive(false);
+        }
+        return nextIdx;
+      }
+      return prevIdx;
+    });
+  }, []);
+
   useEffect(() => {
     let interval: any = null;
-    if (isActive && timeLeft > 0) {
+    if (isActive) {
       interval = setInterval(() => {
-        setTimeLeft(t => t - 1);
+        setTimeLeft(t => {
+          if (t <= 1) {
+            clearInterval(interval);
+            handleNextStage();
+            return 0;
+          }
+          return t - 1;
+        });
       }, 1000);
-    } else if (isActive && timeLeft === 0) {
-      handleNextStage();
     }
     return () => clearInterval(interval);
-  }, [isActive, timeLeft]);
+  }, [isActive, handleNextStage]);
 
   const startTest = () => {
     setStageIdx(1);
     setTimeLeft(TEST_STAGES[1].duration);
     setIsActive(true);
     setTestResults([]);
-  };
-
-  const handleNextStage = () => {
-    if (stageIdx < TEST_STAGES.length - 1) {
-      const nextIdx = stageIdx + 1;
-      setStageIdx(nextIdx);
-      setTimeLeft(TEST_STAGES[nextIdx].duration);
-      if (TEST_STAGES[nextIdx].id === "complete") {
-        setIsActive(false);
-      }
-    }
   };
 
   const formatTime = (seconds: number) => {

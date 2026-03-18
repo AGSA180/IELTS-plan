@@ -1,9 +1,20 @@
 import React, { useState, useRef, useMemo, useEffect } from "react";
 import { T, btn, card, bandColor } from "../theme";
+
+function AudioPlayer({ blob }: { blob: Blob }) {
+  const [url, setUrl] = useState<string>("");
+  useEffect(() => {
+    const objectUrl = URL.createObjectURL(blob);
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [blob]);
+  return <audio src={url} controls style={{ height: 30 }} />;
+}
 import { SectionLabel, BandBadge, WordCount, TimerBar } from "./Shared";
 import { SPEAKING_PARTS, VOCAB_AWL, SPEAKING_P1_TOPICS, SPEAKING_P3_THEMES } from "../data";
-import { generateSpeakingPart1, generateSpeakingPart2, generateSpeakingPart3, getSpeakingFeedback, evaluateSpeakingAudio } from "../services/ai";
+import { generateSpeakingPart1, generateSpeakingPart2, generateSpeakingPart3, getSpeakingFeedback, evaluateSpeakingAudio, generateAcademicVocab } from "../services/ai";
 import { playTTS, stopTTS } from "../utils/tts";
+import { countWords } from "../utils/wordCount";
 import { Volume2, Mic, Square, Play, RefreshCw, CheckCircle, XCircle, BrainCircuit, Activity, Lightbulb } from "lucide-react";
 
 export function SpeakingSection({ logEntry }: { logEntry: any }) {
@@ -18,6 +29,7 @@ export function SpeakingSection({ logEntry }: { logEntry: any }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [prepStarted, setPrepStarted] = useState(false);
   const [speakStarted, setSpeakStarted] = useState(false);
+  const wc = useMemo(() => countWords(response), [response]);
 
   useEffect(() => {
     return () => stopTTS();
@@ -122,7 +134,7 @@ export function SpeakingSection({ logEntry }: { logEntry: any }) {
   };
 
   const analyze = async () => {
-    if (!audioBlob && (!response.trim() || response.trim().split(/\s+/).length < 20)) return;
+    if (!audioBlob && (!response.trim() || wc < 20)) return;
     setLoading(true); setFb(null);
     const q = part === 1 ? p1Q : part === 2 ? cue.cue : p3Q;
     
@@ -264,7 +276,7 @@ export function SpeakingSection({ logEntry }: { logEntry: any }) {
             {audioBlob && (
               <div style={{ marginBottom: 16, padding: 12, background: T.green + "10", borderRadius: 8, border: `1px solid ${T.green}30`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span style={{ fontSize: 13, color: T.green, fontWeight: 600 }}>✓ Audio recorded successfully</span>
-                <audio src={URL.createObjectURL(audioBlob)} controls style={{ height: 30 }} />
+                <AudioPlayer blob={audioBlob} />
               </div>
             )}
 
@@ -283,7 +295,7 @@ export function SpeakingSection({ logEntry }: { logEntry: any }) {
             />
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 12 }}>
               <button onClick={() => { setQIdx(i => i + 1); setAudioBlob(null); setResponse(""); }} style={btn("ghost")}>Next Topic →</button>
-              <button onClick={analyze} disabled={loading || (!audioBlob && response.trim().split(/\s+/).length < 20)} style={btn("primary", loading || (!audioBlob && response.trim().split(/\s+/).length < 20))}>
+              <button onClick={analyze} disabled={loading || (!audioBlob && wc < 20)} style={btn("primary", loading || (!audioBlob && wc < 20))}>
                 {loading ? "Evaluating…" : "Get Band Score"}
               </button>
             </div>
@@ -352,7 +364,7 @@ export function SpeakingSection({ logEntry }: { logEntry: any }) {
             {audioBlob && (
               <div style={{ marginBottom: 16, padding: 12, background: T.green + "10", borderRadius: 8, border: `1px solid ${T.green}30`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span style={{ fontSize: 13, color: T.green, fontWeight: 600 }}>✓ Audio recorded successfully</span>
-                <audio src={URL.createObjectURL(audioBlob)} controls style={{ height: 30 }} />
+                <AudioPlayer blob={audioBlob} />
               </div>
             )}
 
@@ -373,7 +385,7 @@ export function SpeakingSection({ logEntry }: { logEntry: any }) {
               <WordCount text={response} target={200} />
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => { setCueCardIdx(i => i + 1); setAudioBlob(null); setResponse(""); }} style={btn("ghost")}>Next Card →</button>
-                <button onClick={analyze} disabled={loading || (!audioBlob && response.trim().split(/\s+/).length < 80)} style={btn("primary", loading || (!audioBlob && response.trim().split(/\s+/).length < 80))}>
+                <button onClick={analyze} disabled={loading || (!audioBlob && wc < 80)} style={btn("primary", loading || (!audioBlob && wc < 80))}>
                   {loading ? "Evaluating…" : "Get Band Score"}
                 </button>
               </div>
@@ -420,7 +432,7 @@ export function SpeakingSection({ logEntry }: { logEntry: any }) {
             {audioBlob && (
               <div style={{ marginBottom: 16, padding: 12, background: T.green + "10", borderRadius: 8, border: `1px solid ${T.green}30`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span style={{ fontSize: 13, color: T.green, fontWeight: 600 }}>✓ Audio recorded successfully</span>
-                <audio src={URL.createObjectURL(audioBlob)} controls style={{ height: 30 }} />
+                <AudioPlayer blob={audioBlob} />
               </div>
             )}
 
@@ -439,7 +451,7 @@ export function SpeakingSection({ logEntry }: { logEntry: any }) {
             />
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 12 }}>
               <button onClick={() => { setQIdx(i => i + 1); setAudioBlob(null); setResponse(""); setFb(null); }} style={btn("ghost")}>Next Question →</button>
-              <button onClick={analyze} disabled={loading || (!audioBlob && response.trim().split(/\s+/).length < 30)} style={btn("primary", loading || (!audioBlob && response.trim().split(/\s+/).length < 30))}>
+              <button onClick={analyze} disabled={loading || (!audioBlob && wc < 30)} style={btn("primary", loading || (!audioBlob && wc < 30))}>
                 {loading ? "Evaluating…" : "Get Band Score"}
               </button>
             </div>
@@ -538,7 +550,13 @@ export function VocabSection() {
   const [idx, setIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [mode, setMode] = useState("cards");
+  const [generatingVocab, setGeneratingVocab] = useState(false);
   
+  const [vocabList, setVocabList] = useState<any[]>(() => {
+    const saved = localStorage.getItem('ielts_vocab_list');
+    return saved ? JSON.parse(saved) : VOCAB_AWL;
+  });
+
   // Spaced Repetition State
   // Format: { word: { nextReview: timestamp, interval: days, ease: factor } }
   const [srsData, setSrsData] = useState<Record<string, { nextReview: number, interval: number, ease: number }>>(() => {
@@ -558,13 +576,34 @@ export function VocabSection() {
 
   const now = Date.now();
 
+  const generateNewVocab = async () => {
+    setGeneratingVocab(true);
+    try {
+      const existingWords = vocabList.map(v => v.w);
+      const newWords = await generateAcademicVocab(10, existingWords);
+      if (newWords && newWords.length > 0) {
+        const updatedList = [...vocabList, ...newWords];
+        setVocabList(updatedList);
+        localStorage.setItem('ielts_vocab_list', JSON.stringify(updatedList));
+        setFilter("new");
+        setIdx(0);
+        setFlipped(false);
+      }
+    } catch (error) {
+      console.error("Failed to generate vocab:", error);
+      alert("Failed to generate new vocabulary. Please try again.");
+    } finally {
+      setGeneratingVocab(false);
+    }
+  };
+
   const pool = useMemo(() => {
-    if (filter === "all") return VOCAB_AWL;
-    if (filter === "new") return VOCAB_AWL.filter(v => !srsData[v.w]);
-    if (filter === "due") return VOCAB_AWL.filter(v => srsData[v.w] && srsData[v.w].nextReview <= now);
-    if (filter === "learning") return VOCAB_AWL.filter(v => srsData[v.w] && srsData[v.w].interval < 3);
-    return VOCAB_AWL;
-  }, [filter, srsData, now]);
+    if (filter === "all") return vocabList;
+    if (filter === "new") return vocabList.filter(v => !srsData[v.w]);
+    if (filter === "due") return vocabList.filter(v => srsData[v.w] && srsData[v.w].nextReview <= now);
+    if (filter === "learning") return vocabList.filter(v => srsData[v.w] && srsData[v.w].interval < 3);
+    return vocabList;
+  }, [filter, srsData, now, vocabList]);
 
   const card_item = pool[idx % Math.max(pool.length, 1)];
 
@@ -636,8 +675,8 @@ export function VocabSection() {
   };
 
   const startQuiz = () => {
-    const c = VOCAB_AWL[Math.floor(Math.random() * VOCAB_AWL.length)];
-    const wrong = VOCAB_AWL.filter(x => x.w !== c.w).sort(() => Math.random() - .5).slice(0, 3);
+    const c = vocabList[Math.floor(Math.random() * vocabList.length)];
+    const wrong = vocabList.filter(x => x.w !== c.w).sort(() => Math.random() - .5).slice(0, 3);
     const opts = [...wrong.map(x => x.d), c.d].sort(() => Math.random() - .5);
     setQuizQ({ card: c, opts, correct: c.d });
     setQuizAns(null);
@@ -646,7 +685,7 @@ export function VocabSection() {
 
   const stats = useMemo(() => {
     let due = 0, newCards = 0, learning = 0, mastered = 0;
-    VOCAB_AWL.forEach(v => {
+    vocabList.forEach(v => {
       const data = srsData[v.w];
       if (!data) newCards++;
       else if (data.nextReview <= now) due++;
@@ -690,74 +729,93 @@ export function VocabSection() {
             <option value="due">Due for Review ({stats.due})</option>
             <option value="new">New Words ({stats.newCards})</option>
             <option value="learning">Learning ({stats.learning})</option>
-            <option value="all">All Words ({VOCAB_AWL.length})</option>
+            <option value="all">All Words ({vocabList.length})</option>
           </select>
           <button onClick={() => setMode("cards")} style={btn(mode === "cards" ? "primary" : "ghost")}>Cards</button>
           <button onClick={startQuiz} style={btn("gold")}>Quiz</button>
+          <button onClick={generateNewVocab} disabled={generatingVocab} style={{ ...btn("primary", generatingVocab), display: "flex", alignItems: "center", gap: 6 }}>
+            <BrainCircuit size={14} />
+            {generatingVocab ? "Generating..." : "AI Vocab"}
+          </button>
         </div>
       </div>
 
       {mode === "cards" && (
         <>
-          <div style={{
-            minHeight: 240, background: flipped ? T.navy + "04" : T.surface,
-            border: `1.5px solid ${flipped ? T.navy + "40" : T.border}`, borderRadius: 14,
-            padding: 30, marginBottom: 16, display: "flex", flexDirection: "column", justifyContent: "center",
-            transition: "all .25s",
-          }}>
-            {!flipped ? (
-              <div style={{ textAlign: "center", cursor: "pointer" }} onClick={() => setFlipped(true)}>
-                <div style={{ fontSize: 11, color: T.textMuted, letterSpacing: ".12em", marginBottom: 14 }}>WORD</div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 8 }}>
-                  <div style={{ fontSize: 44, fontFamily: "'Cormorant Garamond', serif", color: T.navy }}>{card_item.w}</div>
-                  <button onClick={(e) => speakWord(card_item.w, e)} style={{ background: T.navy + "10", border: "none", cursor: "pointer", color: T.navy, padding: 10, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
-                    <Volume2 size={24} />
-                  </button>
+          {pool.length === 0 ? (
+            <div style={{
+              minHeight: 240, background: T.surface,
+              border: `1.5px dashed ${T.border}`, borderRadius: 14,
+              padding: 30, marginBottom: 16, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
+              textAlign: "center"
+            }}>
+              <CheckCircle size={48} color={T.green} style={{ marginBottom: 16 }} />
+              <h3 style={{ fontSize: 18, color: T.navy, marginBottom: 8 }}>You're all caught up!</h3>
+              <p style={{ fontSize: 14, color: T.textMid, maxWidth: 300 }}>
+                There are no words in this category right now. Try changing the filter or generating new AI vocabulary.
+              </p>
+            </div>
+          ) : (
+            <div style={{
+              minHeight: 240, background: flipped ? T.navy + "04" : T.surface,
+              border: `1.5px solid ${flipped ? T.navy + "40" : T.border}`, borderRadius: 14,
+              padding: 30, marginBottom: 16, display: "flex", flexDirection: "column", justifyContent: "center",
+              transition: "all .25s",
+            }}>
+              {!flipped ? (
+                <div style={{ textAlign: "center", cursor: "pointer" }} onClick={() => setFlipped(true)}>
+                  <div style={{ fontSize: 11, color: T.textMuted, letterSpacing: ".12em", marginBottom: 14 }}>WORD</div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 8 }}>
+                    <div style={{ fontSize: 44, fontFamily: "'Cormorant Garamond', serif", color: T.navy }}>{card_item.w}</div>
+                    <button onClick={(e) => speakWord(card_item.w, e)} style={{ background: T.navy + "10", border: "none", cursor: "pointer", color: T.navy, padding: 10, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
+                      <Volume2 size={24} />
+                    </button>
+                  </div>
+                  {card_item.p && (
+                    <div style={{ fontSize: 16, color: T.textMid, fontFamily: "monospace", marginBottom: 12 }}>{card_item.p}</div>
+                  )}
+                  <div style={{ display: "flex", justifyContent: "center", gap: 4, marginBottom: 14 }}>
+                    {[6.5, 7, 7.5, 8].map(b => (
+                      <span key={b} style={{ fontSize: 11, color: card_item.band >= b ? T.gold : T.borderLight }}>★</span>
+                    ))}
+                    <span style={{ fontSize: 10, color: T.gold, marginLeft: 6 }}>Band {card_item.band}+</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: T.textMuted }}>click to reveal</div>
                 </div>
-                {card_item.p && (
-                  <div style={{ fontSize: 16, color: T.textMid, fontFamily: "monospace", marginBottom: 12 }}>{card_item.p}</div>
-                )}
-                <div style={{ display: "flex", justifyContent: "center", gap: 4, marginBottom: 14 }}>
-                  {[6.5, 7, 7.5, 8].map(b => (
-                    <span key={b} style={{ fontSize: 11, color: card_item.band >= b ? T.gold : T.borderLight }}>★</span>
-                  ))}
-                  <span style={{ fontSize: 10, color: T.gold, marginLeft: 6 }}>Band {card_item.band}+</span>
-                </div>
-                <div style={{ fontSize: 12, color: T.textMuted }}>click to reveal</div>
-              </div>
-            ) : (
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
-                  <div style={{ fontSize: 36, fontFamily: "'Cormorant Garamond', serif", color: T.navy }}>{card_item.w}</div>
-                  <button onClick={(e) => speakWord(card_item.w, e)} style={{ background: T.navy + "10", border: "none", cursor: "pointer", color: T.navy, padding: 8, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
-                    <Volume2 size={20} />
-                  </button>
-                </div>
-                {card_item.p && (
-                  <div style={{ fontSize: 15, color: T.textMid, fontFamily: "monospace", marginBottom: 14 }}>{card_item.p}</div>
-                )}
-                <div style={{ fontSize: 14, color: T.text, marginBottom: 10, lineHeight: 1.7 }}>
-                  <span style={{ color: T.textMuted, fontSize: 11 }}>DEFINITION  </span>{card_item.d}
-                </div>
-                <div style={{ borderLeft: `3px solid ${T.gold}`, paddingLeft: 14, marginBottom: 14 }}>
-                  <div style={{ fontSize: 13, color: T.textMid, fontStyle: "italic", lineHeight: 1.8 }}>{card_item.e}</div>
-                </div>
-                <div style={{ marginBottom: 10 }}>
-                  <span style={{ fontSize: 10, color: T.textMuted }}>SYNONYMS: </span>
-                  {card_item.s.map(s => (
-                    <span key={s} style={{ fontSize: 11, color: T.navyMid, background: T.navy + "0c", padding: "2px 8px", borderRadius: 4, marginRight: 6 }}>{s}</span>
-                  ))}
-                </div>
+              ) : (
                 <div>
-                  <span style={{ fontSize: 10, color: T.textMuted }}>COLLOCATIONS: </span>
-                  {card_item.collocations?.map(c => (
-                    <span key={c} style={{ fontSize: 11, color: T.gold + "cc", background: T.gold + "10", padding: "2px 8px", borderRadius: 4, marginRight: 6, fontStyle: "italic" }}>{c}</span>
-                  ))}
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
+                    <div style={{ fontSize: 36, fontFamily: "'Cormorant Garamond', serif", color: T.navy }}>{card_item.w}</div>
+                    <button onClick={(e) => speakWord(card_item.w, e)} style={{ background: T.navy + "10", border: "none", cursor: "pointer", color: T.navy, padding: 8, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
+                      <Volume2 size={20} />
+                    </button>
+                  </div>
+                  {card_item.p && (
+                    <div style={{ fontSize: 15, color: T.textMid, fontFamily: "monospace", marginBottom: 14 }}>{card_item.p}</div>
+                  )}
+                  <div style={{ fontSize: 14, color: T.text, marginBottom: 10, lineHeight: 1.7 }}>
+                    <span style={{ color: T.textMuted, fontSize: 11 }}>DEFINITION  </span>{card_item.d}
+                  </div>
+                  <div style={{ borderLeft: `3px solid ${T.gold}`, paddingLeft: 14, marginBottom: 14 }}>
+                    <div style={{ fontSize: 13, color: T.textMid, fontStyle: "italic", lineHeight: 1.8 }}>{card_item.e}</div>
+                  </div>
+                  <div style={{ marginBottom: 10 }}>
+                    <span style={{ fontSize: 10, color: T.textMuted }}>SYNONYMS: </span>
+                    {card_item.s.map(s => (
+                      <span key={s} style={{ fontSize: 11, color: T.navyMid, background: T.navy + "0c", padding: "2px 8px", borderRadius: 4, marginRight: 6 }}>{s}</span>
+                    ))}
+                  </div>
+                  <div>
+                    <span style={{ fontSize: 10, color: T.textMuted }}>COLLOCATIONS: </span>
+                    {card_item.collocations?.map(c => (
+                      <span key={c} style={{ fontSize: 11, color: T.gold + "cc", background: T.gold + "10", padding: "2px 8px", borderRadius: 4, marginRight: 6, fontStyle: "italic" }}>{c}</span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-          {flipped && (
+              )}
+            </div>
+          )}
+          {flipped && pool.length > 0 && (
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => handleReview(1)} style={{ flex: 1, ...btn("danger"), padding: "12px 0" }}>
                 <div style={{ fontWeight: 700 }}>Again</div>
@@ -766,19 +824,19 @@ export function VocabSection() {
               <button onClick={() => handleReview(3)} style={{ flex: 1, ...btn("secondary"), padding: "12px 0" }}>
                 <div style={{ fontWeight: 700 }}>Hard</div>
                 <div style={{ fontSize: 10, opacity: 0.8, marginTop: 2 }}>
-                  {srsData[card_item.w]?.interval ? `${Math.round(srsData[card_item.w].interval * 1.2)}d` : '1d'}
+                  {srsData[card_item?.w]?.interval ? `${Math.round(srsData[card_item.w].interval * 1.2)}d` : '1d'}
                 </div>
               </button>
               <button onClick={() => handleReview(4)} style={{ flex: 1, ...btn("primary"), padding: "12px 0" }}>
                 <div style={{ fontWeight: 700 }}>Good</div>
                 <div style={{ fontSize: 10, opacity: 0.8, marginTop: 2 }}>
-                  {srsData[card_item.w]?.interval ? `${Math.round(srsData[card_item.w].interval * 2.5)}d` : '3d'}
+                  {srsData[card_item?.w]?.interval ? `${Math.round(srsData[card_item.w].interval * 2.5)}d` : '3d'}
                 </div>
               </button>
               <button onClick={() => handleReview(5)} style={{ flex: 1, ...btn("success"), padding: "12px 0" }}>
                 <div style={{ fontWeight: 700 }}>Easy</div>
                 <div style={{ fontSize: 10, opacity: 0.8, marginTop: 2 }}>
-                  {srsData[card_item.w]?.interval ? `${Math.round(srsData[card_item.w].interval * 3.5)}d` : '4d'}
+                  {srsData[card_item?.w]?.interval ? `${Math.round(srsData[card_item.w].interval * 3.5)}d` : '4d'}
                 </div>
               </button>
             </div>

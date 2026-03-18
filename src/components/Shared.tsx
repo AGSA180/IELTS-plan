@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { T, bandColor } from "../theme";
+import { countWords } from "../utils/wordCount";
 
 export function BandBadge({ band, size = "md" }: { band: number, size?: "sm" | "md" | "lg" }) {
   const sz = size === "lg" ? { fontSize: 28, padding: "8px 18px" } : size === "sm" ? { fontSize: 12, padding: "3px 9px" } : { fontSize: 18, padding: "5px 14px" };
@@ -56,15 +57,15 @@ export function TimerBar({ seconds, onEnd }: { seconds: number, onEnd?: () => vo
   );
 }
 
-export function WordCount({ text, target }: { text: string, target: number }) {
-  const n = text.trim() === "" ? 0 : text.trim().split(/\s+/).filter(Boolean).length;
+export const WordCount = React.memo(function WordCount({ text, target }: { text: string, target: number }) {
+  const n = React.useMemo(() => countWords(text), [text]);
   const ok = n >= target;
   return (
     <span style={{ fontSize: 12, color: ok ? T.green : n >= target * 0.8 ? T.gold : T.textMuted, fontWeight: 600 }}>
       {n} words {ok ? "✓" : `(minimum: ${target})`}
     </span>
   );
-}
+});
 
 export function SectionLabel({ text, color }: { text: string, color?: string }) {
   return (

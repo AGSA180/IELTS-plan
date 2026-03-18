@@ -1,12 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { T, btn, card, bandColor } from "../theme";
 import { SectionLabel, TimerBar, WordCount, BandBadge, CriterionBar } from "./Shared";
+import { countWords } from "../utils/wordCount";
 import { WRITING_T1_PROMPTS, WRITING_T2_PROMPTS } from "../data";
 import { generateWritingT1, generateWritingT2, getWritingFeedback, getWritingHints, chatWithExaminer } from "../services/ai";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Lightbulb, Sparkles, Send, RefreshCw, MessageCircle, Timer, GraduationCap, Volume2 } from "lucide-react";
 
-function ChartRenderer({ prompt }: { prompt: any }) {
+const ChartRenderer = React.memo(function ChartRenderer({ prompt }: { prompt: any }) {
   if (!prompt.chartData) {
     return <p style={{ fontSize: 13, color: T.textMid, margin: 0, lineHeight: 1.8 }}>{prompt.data}</p>;
   }
@@ -152,7 +153,7 @@ function ChartRenderer({ prompt }: { prompt: any }) {
     default:
       return <p style={{ fontSize: 13, color: T.textMid, margin: 0, lineHeight: 1.8 }}>{prompt.data}</p>;
   }
-}
+});
 
 function ExaminerChat({ task, prompt, userText, feedback }: { task: number, prompt: string, userText: string, feedback: any }) {
   const [messages, setMessages] = useState<{role: "user" | "examiner", text: string}[]>([]);
@@ -437,7 +438,7 @@ export function WritingTask1({ logEntry }: { logEntry: any }) {
   const [loading, setLoading] = useState(false);
   const [fb, setFb] = useState<any>(null);
   const prompt = promptData;
-  const wc = text.trim() === "" ? 0 : text.trim().split(/\s+/).filter(Boolean).length;
+  const wc = useMemo(() => countWords(text), [text]);
 
   const generateNew = async () => {
     setGenerating(true);
@@ -553,7 +554,7 @@ export function WritingTask2({ logEntry }: { logEntry: any }) {
   const [hints, setHints] = useState<any>(null);
   const [loadingHints, setLoadingHints] = useState(false);
   const prompt = promptData;
-  const wc = text.trim() === "" ? 0 : text.trim().split(/\s+/).filter(Boolean).length;
+  const wc = useMemo(() => countWords(text), [text]);
 
   const fetchHints = async () => {
     setLoadingHints(true);

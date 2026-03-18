@@ -2,6 +2,54 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
 
+export async function generateAcademicVocab(count: number = 10, existingWords: string[] = []) {
+  try {
+    const prompt = `Generate ${count} advanced academic English words suitable for IELTS Band 7-9. 
+    Ensure they are highly relevant for academic writing and speaking.
+    Do NOT include any of the following words: ${existingWords.join(", ")}.
+    Return ONLY a JSON array of objects with this exact structure:
+    [
+      {
+        "w": "Word",
+        "p": "/phonetic transcription/",
+        "d": "Clear definition",
+        "e": "Example sentence in an academic context",
+        "s": ["synonym1", "synonym2", "synonym3"],
+        "band": 8,
+        "collocations": ["collocation 1", "collocation 2", "collocation 3"]
+      }
+    ]`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.1-pro-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              w: { type: Type.STRING },
+              p: { type: Type.STRING },
+              d: { type: Type.STRING },
+              e: { type: Type.STRING },
+              s: { type: Type.ARRAY, items: { type: Type.STRING } },
+              band: { type: Type.NUMBER },
+              collocations: { type: Type.ARRAY, items: { type: Type.STRING } }
+            },
+            required: ["w", "p", "d", "e", "s", "band", "collocations"]
+          }
+        }
+      }
+    });
+    return JSON.parse(response.text || "[]");
+  } catch (e) {
+    console.error("Error generating vocab:", e);
+    return [];
+  }
+}
+
 export async function getWritingFeedback(task: number, prompt: string, text: string, wordCount: number) {
   try {
     const isTask1 = task === 1;
