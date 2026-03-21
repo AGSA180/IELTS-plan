@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { signInWithGoogle, logOut } from '../firebase';
+import { signInWithGoogle, signInAsGuest, logOut } from '../firebase';
 import { T, btn, card } from '../theme';
 
 export function LoginScreen() {
   const [loading, setLoading] = useState(false);
+  const [guestLoading, setGuestLoading] = useState(false);
 
   const handleLogin = async () => {
     setLoading(true);
@@ -15,6 +16,16 @@ export function LoginScreen() {
     }
   };
 
+  const handleGuestLogin = async () => {
+    setGuestLoading(true);
+    try {
+      await signInAsGuest();
+    } catch (e) {
+      console.error(e);
+      setGuestLoading(false);
+    }
+  };
+
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: T.bgDeep, fontFamily: "'EB Garamond', Georgia, serif" }}>
       <div style={{ ...card(), maxWidth: 400, width: "100%", textAlign: "center", padding: 40 }}>
@@ -22,13 +33,29 @@ export function LoginScreen() {
         <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, color: T.navy, marginBottom: 10 }}>IELTS Academic Pro</h1>
         <p style={{ color: T.textMid, marginBottom: 30, fontSize: 16 }}>Sign in to save your practice reports, track your progress, and get personalized AI feedback.</p>
         
-        <button 
-          onClick={handleLogin} 
-          disabled={loading}
-          style={{ ...btn("primary"), width: "100%", padding: "12px 20px", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}
-        >
-          {loading ? "Signing in..." : "Sign in with Google"}
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <button 
+            onClick={handleLogin} 
+            disabled={loading || guestLoading}
+            style={{ ...btn("primary"), width: "100%", padding: "12px 20px", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}
+          >
+            {loading ? "Signing in..." : "Sign in with Google"}
+          </button>
+          
+          <div style={{ display: 'flex', alignItems: 'center', margin: '10px 0' }}>
+            <div style={{ flex: 1, height: 1, background: T.borderLight }}></div>
+            <span style={{ padding: '0 10px', fontSize: 12, color: T.textMuted }}>OR</span>
+            <div style={{ flex: 1, height: 1, background: T.borderLight }}></div>
+          </div>
+
+          <button 
+            onClick={handleGuestLogin} 
+            disabled={loading || guestLoading}
+            style={{ ...btn("ghost"), width: "100%", padding: "12px 20px", fontSize: 16, border: `1px solid ${T.border}` }}
+          >
+            {guestLoading ? "Entering..." : "Try as Guest (No Save)"}
+          </button>
+        </div>
       </div>
     </div>
   );

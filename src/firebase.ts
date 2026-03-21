@@ -17,6 +17,16 @@ export const signInWithGoogle = async () => {
   }
 };
 
+export const signInAsGuest = async () => {
+  try {
+    const { signInAnonymously } = await import('firebase/auth');
+    await signInAnonymously(auth);
+  } catch (error) {
+    console.error("Error signing in as guest", error);
+    throw error;
+  }
+};
+
 export const logOut = async () => {
   try {
     await signOut(auth);
